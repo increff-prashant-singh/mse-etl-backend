@@ -164,13 +164,3 @@ def cancelRun(factory, pipeline_name):
         logging.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
-@views.route('/views-test',methods=['GET','POST'])
-def views_test():
-    print('views-test')
-    return 'views-test'
-
-
-views.route('test',methods=['GET','POST'])
-def test():
-    print("hello test")
-    return 'hello'

@@ -30,10 +30,10 @@ def after_request(response):
     # Other headers can be added here if needed
     return response
 
-# @auth.before_request
-# def make_session_permanent():
-#     session.permanent = True
-#     auth.permanent_session_lifetime = timedelta(minutes=30) 
+@auth.before_request
+def make_session_permanent():
+    session.permanent = True
+    auth.permanent_session_lifetime = timedelta(minutes=30) 
 
 
 
@@ -133,8 +133,8 @@ def logout():
             session.clear()
             print("current user after logout is ",current_user)
             print("current user session after logout is",session)
-            response = redirect(os.getenv("APP_BASE_URL"), code=301)
-            return response
+            # response = redirect(os.getenv("APP_BASE_URL"), code=301)
+            return jsonify({'message': 'logout successful'}), 200
         except ApiException as e:
             return str(e) , 400
         
