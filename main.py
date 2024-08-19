@@ -6,8 +6,11 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.datafactory import DataFactoryManagementClient
 from flask_cors import CORS
 
+from flask_login import login_user, logout_user,LoginManager,UserMixin,login_required,current_user
+from flask import session
+
 app=create_app()
-CORS(app)
+CORS(app,supports_credentials=True)
 
 def main():
     @app.route('/')

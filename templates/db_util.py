@@ -11,7 +11,6 @@ import mysql.connector  # or import pymysql if you're using PyMySQL
 from mysql.connector import Error  # or use pymysql
 from flask import g  # global context for database connection
 from flask import current_app,redirect
-from .app_helper import Helper
 from werkzeug.exceptions import HTTPException 
 
 load_dotenv()

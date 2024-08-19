@@ -12,73 +12,93 @@ from flask import g  # global context for database connection
 from flask import current_app,redirect
 # from app_helper import Helper
 from werkzeug.exceptions import HTTPException 
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user,LoginManager,UserMixin,login_required,current_user
+from flask import session
+from flask_appbuilder import BaseView,AppBuilder
+from flask.views import MethodView
+
+
+
 
 load_dotenv()
 
 auth = Blueprint('auth', __name__)
-@auth.after_request 
+CORS(auth,supports_credentials=True)
 def after_request(response):
     header = response.headers
     header['Access-Control-Allow-Origin'] = '*'
     # Other headers can be added here if needed
     return response
-# CORS(auth)
-cors = CORS(auth)
+
+# @auth.before_request
+# def make_session_permanent():
+#     session.permanent = True
+#     auth.permanent_session_lifetime = timedelta(minutes=30) 
 
 
-#Auth server
-@auth.route('/login', methods=['GET', 'POST'])
+
+@auth.route('/login/', methods=['GET', 'POST'])
 def login():
         
-    # if g.user is not None and g.user.is_authenticated:
-    #     return redirect(self.appbuilder.get_url_for_index)
-    
-    appBaseURL = os.getenv("APP_BASE_URL") 
-    authNextUrl = os.getenv("AUTH_NEXT_URL")
-    accountServerLoginUrl = os.getenv("AUTH_BASE_URL")  + "auth/login/"
-    # Invoke Auth server URL with authNextUrl set to this controller
-    authNextUrl = appBaseURL + "/login-post"
-    
-    authAppName = os.getenv("AUTH_APP_NAME")
-    appNextUrl = os.getenv("APP_NEXT_URL")
-    domainName = os.getenv("DOMAIN_NAME")
+        
+        appBaseURL = current_app.config.get("APP_BASE_URL", "") 
+        authNextUrl = current_app.config.get("AUTH_NEXT_URL", "")
+        accountServerLoginUrl = current_app.config.get("AUTH_BASE_URL", "")  + "auth/login/"
+        # Invoke Auth server URL with authNextUrl set to this controller
+        authNextUrl = appBaseURL + "/login-post"
+      
+        authAppName = current_app.config.get("AUTH_APP_NAME", "")
+        appNextUrl = current_app.config.get("APP_NEXT_URL", "")
+        domainName = current_app.config.get("DOMAIN_NAME", "")
 
-    # Redirect with parameters
-    if domainName:
-        url = accountServerLoginUrl + '?appName=' +authAppName + '&authNextUrl='+authNextUrl+'&domainName='+domainName+'&appNextUrl='+appNextUrl+'&authApp='+authAppName
-        print("url is :"+accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&domainName={domainName}&appNextUrl={appNextUrl}&authNextUrl={authNextUrl}&authApp={authAppName}')
-        # return redirect(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&domainName={domainName}&appNextUrl={appNextUrl}&authNextUrl={authNextUrl}&authApp={authAppName}')
-        return url
-    else:
-        print(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&domainName={domainName}&appNextUrl={appNextUrl}&authNextUrl={authNextUrl}&authApp={authAppName}')
-        return redirect(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&appNextUrl={appNextUrl}')
-
+        # Redirect with parameters
+        if domainName:
+            print(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&domainName={domainName}&appNextUrl={appNextUrl}')
+            return redirect(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&domainName={domainName}&appNextUrl={appNextUrl}')
+        else:
+            return redirect(accountServerLoginUrl + f'?appName={authAppName}&authNextUrl={authNextUrl}&appNextUrl={appNextUrl}')
 
     
-@auth.route('/login-post', methods=['GET', 'POST'])
+@auth.route('/login-post/', methods=['GET', 'POST'])
 def login_post():
-    try:
-        
-        print("Entered login post")
-        auth_status = bool(request.args.get('authStatus'))
-        auth_temp_token = request.args.get('authTempToken')
-        auth_message = request.args.get('authMessage')
+        try:
+            
+            print("Entered login post")
+            auth_status = bool(request.args.get('authStatus'))
+            auth_temp_token = request.args.get('authTempToken')
+            auth_message = request.args.get('authMessage')
 
-        print("tempToken", auth_temp_token)
+            print("tempToken", auth_temp_token)
+
+            response, status = Helper().get_auth_token(auth_status, auth_message, auth_temp_token)
+            print("authToken", response.json.get("authToken"))
+            session["authToken"] = response.json.get("authToken")
+            print("Session: ", session)
+
+            user = Helper().get_user_from_token(response.json.get("authToken"))
+            print("user", user)
+            user_info = Helper().extract_user_info(user)
+            print('user info is ', user_info)
+            session["domainName"] = user._domainName
+            session['userName']=user_info.get('username')
+            session['email']=user_info.get('email')
+            print("domain is ", user._domainName)
+            from . import User
+            user = User(session.get("userName"), session.get("email"))
+            
+            login_user(user)
+
+            print(f"curentuser login is {current_user}")
+            print(f"session is {session}")
+            response = redirect(os.getenv("APP_NEXT_URL"), code=301)  # Permanent redirect
+            return response
+        except Exception as e:
+            # Handle ApiException, you can customize this part
+            return str(e), 400  # Returning a BadRequest status code for ApiException
         
-        response , status= Helper().get_auth_token(auth_status, auth_message, auth_temp_token)
-        
-        response = redirect(os.getenv("APP_NEXT_URL"), code=301)  # Permanent redirect
-        return response
     
-    except Exception as e:
-        # Handle Exception, you can customize this part
-        return str(e), 400  # Returning a BadRequest status code for Exception
-    
-    
-@auth.route('/login-post-auth', methods=['GET', 'POST'])
-def login_post_auth():
+@auth.route('/login-post-auth/', methods=['GET', 'POST'])
+def login_post_auth(self):
         try:
             print("Enter in that function ......")
             auth_token = request.args.get('authToken')
@@ -94,32 +114,45 @@ def login_post_auth():
             g.user.authtoken = auth_token
             session["domainName"] = user._domainName
             print(domainName)
-            response = redirect(os.getenv("APP_NEXT_URL"), code=301)  # Permanent redirect
+            response = redirect(current_app.config.get("APP_NEXT_URL"), code=301)  # Permanent redirect
             return response
         
-        except Exception as e:
-            # Handle Exception, you can customize this part
-            return str(e), 400  # Returning a BadRequest status code for Exception
+        except ApiException as e:
+            # Handle ApiException, you can customize this part
+            return str(e), 400  # Returning a BadRequest status code for ApiException
         
 
-@auth.route('/logout' , methods=['GET'])
+@auth.route('/logout/' , methods=['GET','POST'])
+# @login_required
 def logout():
         try:
-            auth_token = session["authToken"]
-            session.clear()
-            # self.delete_token(auth_token)
+            print(f"current user before logout is ,{current_user}")
+            print(f"current user before logout is ,{session}")
+           
             logout_user()
+            session.clear()
+            print("current user after logout is ",current_user)
+            print("current user session after logout is",session)
             response = redirect(os.getenv("APP_BASE_URL"), code=301)
             return response
-        except Exception as e:
+        except ApiException as e:
             return str(e) , 400
+        
+@auth.route('/currentUser/',methods=['GET'])
+# @login_required
+def currentUser():
+    print('Request Headers:', request.headers)
+    print(' thsi is Cookies: ', request.cookies)
+    print('current user session is ',session)
+    userInfo={
+        "username":session.get('userName'),
+        "email":session.get('email')
+    }
+    return jsonify(userInfo)
 
-print("hello user")
 
-
-#class from app helper
 class Helper:
-    def get_auth_token(self,auth_status, auth_message, auth_temp_token):
+    def get_auth_token(self,auth_status,auth_message, auth_temp_token):
         if not auth_status:
             raise Exception(auth_message)
 
@@ -129,7 +162,7 @@ class Helper:
         try:
             # Replace this with the logic to convert the temp token
             qtd = self.convert_temp_token(auth_temp_token)
-            print(qtd)
+            print("qtd is ",qtd)
         
         except Exception as e:
             print(e)
@@ -202,7 +235,7 @@ class Helper:
         :return: A dictionary with user information
         """
 
-        print(user_obj)
+        print("user object is ",user_obj)
         full_name = user_obj.fullName
         print(full_name)
         first_space_index = full_name.find(" ")
