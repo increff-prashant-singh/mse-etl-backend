@@ -30,10 +30,10 @@ def after_request(response):
     # Other headers can be added here if needed
     return response
 
-@auth.before_request
-def make_session_permanent():
-    session.permanent = True
-    auth.permanent_session_lifetime = timedelta(minutes=30) 
+# @auth.before_request
+# def make_session_permanent():
+#     session.permanent = True
+#     auth.permanent_session_lifetime = timedelta(minutes=30) 
 
 
 
@@ -98,7 +98,7 @@ def login_post():
         
     
 @auth.route('/login-post-auth/', methods=['GET', 'POST'])
-def login_post_auth(self):
+def login_post_auth():
         try:
             print("Enter in that function ......")
             auth_token = request.args.get('authToken')
@@ -107,17 +107,16 @@ def login_post_auth(self):
             session["authToken"] = auth_token
             print("user" , user)
             user_info = Helper().extract_user_info(user)
-            
-            superset_user = self.appbuilder.sm.auth_user_oauth(user_info)
-            print("superset_user", superset_user)
-            login_user(superset_user)
-            g.user.authtoken = auth_token
-            session["domainName"] = user._domainName
-            print(domainName)
-            response = redirect(current_app.config.get("APP_NEXT_URL"), code=301)  # Permanent redirect
-            return response
+            # response = redirect(current_app.config.get("APP_NEXT_URL"), code=301)  # Permanent redirect
+            # return response
+            userInfo={
+                 "username":user_info.get('userName'),
+                 "email":user_info.get('email')
+                }
+            print('user info in login-post-auth ',userInfo)
+            return jsonify(userInfo)
         
-        except ApiException as e:
+        except Exception as e:
             # Handle ApiException, you can customize this part
             return str(e), 400  # Returning a BadRequest status code for ApiException
         
@@ -141,13 +140,16 @@ def logout():
 @auth.route('/currentUser/',methods=['GET'])
 # @login_required
 def currentUser():
-    print('Request Headers:', request.headers)
-    print(' thsi is Cookies: ', request.cookies)
-    print('current user session is ',session)
+    # print('Request Headers:', request.headers)
+    # # print(' thsi is Cookies: ', request.cookies)
+    # print('current user session is ',session)
     userInfo={
         "username":session.get('userName'),
-        "email":session.get('email')
+        "email":session.get('email'),
+        "auth_token":session.get('authToken')
     }
+
+    print("current user info is ",userInfo)
     return jsonify(userInfo)
 
 
