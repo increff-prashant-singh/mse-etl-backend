@@ -13,10 +13,10 @@ from flask import current_app,redirect
 # from app_helper import Helper
 from werkzeug.exceptions import HTTPException 
 from flask_login import login_user, logout_user,LoginManager,UserMixin,login_required,current_user
-from flask import session
+from flask import session,url_for
 from flask_appbuilder import BaseView,AppBuilder
 from flask.views import MethodView
-
+from functools import wraps
 
 
 
@@ -29,6 +29,30 @@ def after_request(response):
     header['Access-Control-Allow-Origin'] = '*'
     # Other headers can be added here if needed
     return response
+
+
+#  and request.endpoint not in ('auth.login', 'auth.login_post', 'auth.login_post_auth', 'auth.logout'):
+# Global authentication filter
+@auth.before_app_request
+def global_authentication_filter():
+    """This function runs before every request to check if the user is authenticated."""
+    print("toekn in global auth is ",request.headers.get('Authorization').split(" ")[0])
+    if not is_user_logged_in(request.headers.get('Authorization').split(" ")[0])  and request.endpoint not in ('auth.login', 'auth.login_post', 'auth.logout','auth.currentUser'):
+        print("user is authenticated in global auth")
+        # Redirect to login if user is not logged in
+        # print("redirecting to auth login ",url_for('auth.login'))
+        
+
+def is_user_logged_in(authToken):
+    """Check if the user is logged in by verifying session or token."""
+    user= Helper().get_user_from_token(authToken)
+    if user is None:
+        return False
+    user_info = Helper().extract_user_info(user)
+    print("user in global auth is ",user_info)
+    if user_info is not None:
+        return True
+    return False
 
 # @auth.before_request
 # def make_session_permanent():
@@ -216,7 +240,7 @@ class Helper:
         return QueryTokenData(**response.json())
 
     def make_request(self , method, url, headers=None, params=None, data=None):
-        base_url = "https://services.nextscm.com/account/"  # Replace with your API base URL
+        base_url = "https://services.increff.com/account/"  # Replace with your API base URL
         full_url = base_url + url
     
         try:

@@ -16,7 +16,7 @@ from werkzeug.exceptions import HTTPException
 load_dotenv()
 
 views = Blueprint('views', __name__)
-CORS(views)
+CORS(views,supports_credentials=True)
 
 
 
