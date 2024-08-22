@@ -102,14 +102,14 @@ def createRun(factory, pipeline):
             subscription_id=os.getenv("AZURE_SUBSCRIPTION_ID"),
         )
 
-        response = client.pipelines.create_run(
-            resource_group_name="rg-ms-etl-prod",
-            factory_name=factory,
-            pipeline_name=pipeline,
-            parameters=parameters
-        )
+        # response = client.pipelines.create_run(
+        #     resource_group_name="rg-ms-etl-prod",
+        #     factory_name=factory,
+        #     pipeline_name=pipeline,
+        #     parameters=parameters
+        # )
 
-        return jsonify(response.as_dict()), 200
+        # return jsonify(response.as_dict()), 200
 
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")

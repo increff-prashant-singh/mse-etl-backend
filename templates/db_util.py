@@ -9,17 +9,49 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 import mysql.connector  # or import pymysql if you're using PyMySQL
 from mysql.connector import Error  # or use pymysql
-from flask import g  # global context for database connection
+from flask import g ,session # global context for database connection
 from flask import current_app,redirect
 from werkzeug.exceptions import HTTPException 
 from flask_login import login_required
 import json
 from datetime import datetime
+from .auth import Helper
 
 load_dotenv()
 
 db_util = Blueprint('db_util', __name__)
 CORS(db_util,supports_credentials=True)
+
+@db_util.before_request
+def global_authentication_filter():
+      if request.method == 'OPTIONS':
+        # This is the preflight request; return 200 OK
+         return '', 200
+#     """This function runs before every request to check if the user is authenticated."""
+      authorization_header = request.headers.get('Authorization')
+#     print(f"Authorization header for {request.url} is: {authorization_header}")
+      if(session.get('authToken') is None):
+            session['authToken']=authorization_header
+      else: authorization_header=session.get('authToken')
+      auth_token = session.get('authToken')
+      if not is_user_logged_in(authorization_header):
+            return jsonify({"error": "Unauthorized access"}), 401
+
+def is_user_logged_in(authToken):
+    """Check if the user is logged in by verifying session or token."""
+
+    if authToken is None:
+        return False
+
+    user = Helper().get_user_from_token(authToken)
+    print("user in login check is ",user)
+    if user.email is None:
+        return False
+
+    user_info = Helper().extract_user_info(user)
+    print("User in global auth is:", user_info)
+
+    return user_info is not None
 
 def after_request(response):
     header = response.headers

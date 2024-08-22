@@ -24,27 +24,34 @@ load_dotenv()
 
 auth = Blueprint('auth', __name__)
 CORS(auth,supports_credentials=True)
-def after_request(response):
-    header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'
-    # Other headers can be added here if needed
-    return response
+# def after_request(response):
+#     header = response.headers
+#     header['Access-Control-Allow-Origin'] = '*'
+#     # Other headers can be added here if needed
+#     return response
 
 
-#  and request.endpoint not in ('auth.login', 'auth.login_post', 'auth.login_post_auth', 'auth.logout'):
-# Global authentication filter
-@auth.before_app_request
+# #  and request.endpoint not in ('auth.login', 'auth.login_post', 'auth.login_post_auth', 'auth.logout'):
+# # Global authentication filter
+@auth.before_request
 def global_authentication_filter():
     """This function runs before every request to check if the user is authenticated."""
-    print("toekn in global auth is ",request.headers.get('Authorization').split(" ")[0])
-    if not is_user_logged_in(request.headers.get('Authorization').split(" ")[0])  and request.endpoint not in ('auth.login', 'auth.login_post', 'auth.logout','auth.currentUser'):
-        print("user is authenticated in global auth")
+    # print("toekn in global auth is ",request.headers.get('Authorization').split(" ")[0])
+    if request.endpoint not in ('auth.login', 'auth.login_post', 'auth.login_post_auth','auth.logout','auth.currentUser,auth.login-post') :
+        print("authorization header is :",request.headers.get('Authorization'))
+#         if not is_user_logged_in(request.headers.get('Authorization')):
+#             print("user is authenticated in global auth")
+#             return False
         # Redirect to login if user is not logged in
         # print("redirecting to auth login ",url_for('auth.login'))
         
 
 def is_user_logged_in(authToken):
     """Check if the user is logged in by verifying session or token."""
+    # authToken=request.headers.get('Authorization')
+    if authToken is None:
+        # authToken=request.args.get('authTempToken')
+        print("authToken is empty ",authToken)
     user= Helper().get_user_from_token(authToken)
     if user is None:
         return False
@@ -54,10 +61,10 @@ def is_user_logged_in(authToken):
         return True
     return False
 
-# @auth.before_request
-# def make_session_permanent():
-#     session.permanent = True
-#     auth.permanent_session_lifetime = timedelta(minutes=30) 
+# # @auth.before_request
+# # def make_session_permanent():
+# #     session.permanent = True
+# #     auth.permanent_session_lifetime = timedelta(minutes=30) 
 
 
 
@@ -106,6 +113,7 @@ def login_post():
             session["domainName"] = user._domainName
             session['userName']=user_info.get('username')
             session['email']=user_info.get('email')
+            session['is_authenticated']=True
             print("domain is ", user._domainName)
             from . import User
             user = User(session.get("userName"), session.get("email"))
@@ -161,7 +169,7 @@ def logout():
         except ApiException as e:
             return str(e) , 400
         
-@auth.route('/currentUser/',methods=['GET'])
+@auth.route('/currentUser/',methods=['GET',])
 # @login_required
 def currentUser():
     # print('Request Headers:', request.headers)
@@ -418,7 +426,9 @@ class QueryUserForm:
     def get_username(self):
         return self.username
 
-@auth.route('test',methods=['GET','POST'])
-def test():
-    print("hello test")
-    return 'hello'
+# @auth.route('test',methods=['GET','POST'])
+# def test():
+#     print("hello test")
+#     return 'hello'
+
+# print("URL for login:", url_for('auth.login'))
