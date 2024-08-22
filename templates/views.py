@@ -18,7 +18,11 @@ load_dotenv()
 views = Blueprint('views', __name__)
 CORS(views,supports_credentials=True)
 
-
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    # Other headers can be added here if needed
+    return response
 
 # Function to get a database connection
 def get_db_connection():
@@ -102,14 +106,14 @@ def createRun(factory, pipeline):
             subscription_id=os.getenv("AZURE_SUBSCRIPTION_ID"),
         )
 
-        # response = client.pipelines.create_run(
-        #     resource_group_name="rg-ms-etl-prod",
-        #     factory_name=factory,
-        #     pipeline_name=pipeline,
-        #     parameters=parameters
-        # )
+        response = client.pipelines.create_run(
+            resource_group_name="rg-ms-etl-prod",
+            factory_name=factory,
+            pipeline_name=pipeline,
+            parameters=parameters
+        )
 
-        # return jsonify(response.as_dict()), 200
+        return jsonify(response.as_dict()), 200
 
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
