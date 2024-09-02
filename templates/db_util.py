@@ -80,8 +80,8 @@ def getRecords(client):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT * FROM etl_datafactory_pipelines WHERE client = %s AND trigger_flag = %s"
-        cursor.execute(query, (client,1))
+        query = "SELECT * FROM etl_datafactory_pipelines WHERE client = %s "
+        cursor.execute(query, (client,))
         result = cursor.fetchall()
         cursor.close()
         return jsonify(result)

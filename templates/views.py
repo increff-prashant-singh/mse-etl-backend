@@ -161,6 +161,28 @@ def cancelRun(factory, pipeline_name):
             run_id=latest_run_id,
         )
 
+        #cancel the child pipeliens
+        child_runs = client.pipeline_runs.query_by_factory(
+            resource_group_name="rg-ms-etl-prod",
+            factory_name=factory,
+            filter_parameters={
+                "lastUpdatedAfter": start_time,
+                "lastUpdatedBefore": end_time,
+                "filters": [
+                    {"operand": "TriggeredByName", "operator": "Equals", "values": [pipeline_name]}
+                ]
+            }
+        )
+
+        # Cancel all identified child runs
+        for run in child_runs.value:
+            client.pipeline_runs.cancel(
+                resource_group_name="rg-ms-etl-prod",
+                factory_name=factory,
+                run_id=run.run_id,
+            )
+
+
         return jsonify({"message": f"Run {latest_run_id} for pipeline {pipeline_name} cancelled successfully"}), 200
 
     except Exception as e:
