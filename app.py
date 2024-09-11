@@ -14,13 +14,13 @@ CORS(app,supports_credentials=True)
 
 def main():
 
-    @app.route('/')
+    @app.route('/api')
     def index():
         response = make_response('Hello, World!')
         response.headers['Access-Control-Allow-Origin']='*'
         return response
 
-    app.run(debug=True)
+    app.run(debug=True,port=5000)
 
 
 

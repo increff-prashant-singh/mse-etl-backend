@@ -172,9 +172,6 @@ def logout():
 @auth.route('/currentUser/',methods=['GET',])
 # @login_required
 def currentUser():
-    # print('Request Headers:', request.headers)
-    # # print(' thsi is Cookies: ', request.cookies)
-    # print('current user session is ',session)
     userInfo={
         "username":session.get('userName'),
         "email":session.get('email'),
@@ -248,7 +245,7 @@ class Helper:
         return QueryTokenData(**response.json())
 
     def make_request(self , method, url, headers=None, params=None, data=None):
-        base_url = "https://services.increff.com/account/"  # Replace with your API base URL
+        base_url = os.getenv("AUTH_BASE_URL")  # Replace with your API base URL
         full_url = base_url + url
     
         try:
