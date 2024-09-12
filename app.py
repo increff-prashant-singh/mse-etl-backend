@@ -12,19 +12,19 @@ from flask import session
 app=create_app()
 CORS(app,supports_credentials=True)
 
-def main():
-
-    @app.route('/')
-    def index():
-        response = make_response('Hello, World!')
-        response.headers['Access-Control-Allow-Origin']='*'
-        return response
-
-    app.run(debug=True)
 
 
+@app.route('/api')
+def index():
+    response = make_response('Hello, World!')
+    response.headers['Access-Control-Allow-Origin']='*'
+    return response
+
+    
 
 
-if __name__=='__main__':
-    main()
+
+
+
+   
     

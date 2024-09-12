@@ -316,6 +316,6 @@ def cancelPipeline(run_id,data_factory):
                             factory_name=data_factory,
                             run_id=run_id,
                         )
-    except HttpResponseError as ex:
-        print (f"run id : {run_id} run is Completed or Cancelled Already Exception:{ex}")
+    except Exception as ex:
+        print (f"run id : {run_id} run is Completed or Cancelled Already Exception:{ex}"),404
 

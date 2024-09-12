@@ -16,6 +16,7 @@ from flask_login import login_required
 import json
 from datetime import datetime
 from .auth import Helper
+from flask import abort
 
 load_dotenv()
 
@@ -35,7 +36,7 @@ def global_authentication_filter():
       else: authorization_header=session.get('authToken')
       auth_token = session.get('authToken')
       if not is_user_logged_in(authorization_header):
-            return jsonify({"error": "Unauthorized access"}), 401
+            abort(401)
 
 def is_user_logged_in(authToken):
     """Check if the user is logged in by verifying session or token."""
